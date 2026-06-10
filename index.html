@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sj_yc12</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <aside class="sidebar">
+    <a class="brand" href="./index.html"><span></span>sj_yc12</a>
+    <nav>
+      <button class="nav active" data-view="gallery">사진</button>
+      <button class="nav" data-view="folders">폴더</button>
+      <button class="nav" data-view="guide">올리는 법</button>
+    </nav>
+  </aside>
+
+  <main class="app">
+    <header class="mobile-head">
+      <a class="brand" href="./index.html"><span></span>sj_yc12</a>
+    </header>
+
+    <section class="top">
+      <div>
+        <p>GitHub 사진 갤러리</p>
+        <h1>사진 아카이브</h1>
+      </div>
+      <div class="tools">
+        <input id="searchInput" type="search" placeholder="검색" />
+        <select id="folderSelect">
+          <option value="">전체</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="gallery" class="view show">
+      <div class="bar">
+        <div>
+          <h2>사진</h2>
+          <p id="countText">불러오는 중</p>
+        </div>
+        <button id="refreshBtn" class="soft">새로고침</button>
+      </div>
+      <div id="grid" class="grid"></div>
+      <div id="empty" class="empty hidden">사진이 없습니다</div>
+    </section>
+
+    <section id="folders" class="view">
+      <div class="bar">
+        <div>
+          <h2>폴더</h2>
+          <p id="folderCount">0개</p>
+        </div>
+      </div>
+      <div id="folderGrid" class="folder-grid"></div>
+    </section>
+
+    <section id="guide" class="view">
+      <div class="guide-card">
+        <h2>사진 올리는 법</h2>
+        <ol>
+          <li>GitHub 저장소에 들어갑니다.</li>
+          <li><b>photos</b> 폴더를 엽니다.</li>
+          <li>Add file → Upload files를 누릅니다.</li>
+          <li>사진을 올리고 Commit changes를 누릅니다.</li>
+          <li>사이트에서 새로고침을 누르면 반영됩니다.</li>
+        </ol>
+        <p>폴더를 만들고 싶으면 <b>photos/여행/사진.jpg</b> 처럼 폴더 안에 사진을 넣으면 됩니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="mobile-nav active" data-view="gallery">사진</button>
+    <button class="mobile-nav" data-view="folders">폴더</button>
+    <button class="mobile-nav" data-view="guide">올리는 법</button>
+  </nav>
+
+  <dialog id="viewer" class="viewer">
+    <button id="closeViewer" class="close">×</button>
+    <div id="viewerBody"></div>
+  </dialog>
+
+  <script src="./app.js"></script>
+</body>
+</html>
