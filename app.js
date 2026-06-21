@@ -5,6 +5,8 @@ const CONFIG = {
   photoDir: "photos"
 };
 
+const GITHUB_TOKEN = "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";
+
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
 const VIDEO_EXT = [".mp4", ".webm", ".mov"];
 const FILE_EXT = [".pdf"];
@@ -31,16 +33,12 @@ const uploadFolder = $("uploadFolder");
 const fileInput = $("fileInput");
 const uploadBtn = $("uploadBtn");
 const uploadStatus = $("uploadStatus");
-const githubToken = $("githubToken");
-const saveTokenBtn = $("saveTokenBtn");
-const clearTokenBtn = $("clearTokenBtn");
+const uploadPassword = $("uploadPassword");
 const viewer = $("viewer");
 const viewerBody = $("viewerBody");
 const closeViewer = $("closeViewer");
 
-const TOKEN_KEY = "sj_yc12_github_token";
-
-githubToken.value = localStorage.getItem(TOKEN_KEY) || "";
+const UPLOAD_PASSWORD_HASH = "8797d0ddf0f02784b207fe18c89ac3bbc801b037c0d6f0e03a8051772d623c54";
 
 document.querySelectorAll(".nav, .mobile-nav").forEach(btn => {
   btn.addEventListener("click", () => showView(btn.dataset.view));
@@ -68,25 +66,13 @@ folderSelect.addEventListener("change", () => {
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
 
-saveTokenBtn.addEventListener("click", () => {
-  const token = githubToken.value.trim();
-  if (!token) {
-    setUploadStatus("저장할 토큰을 입력해 주세요.", true);
-    return;
-  }
-
-  localStorage.setItem(TOKEN_KEY, token);
-  setUploadStatus("토큰 저장 완료");
-});
-
-clearTokenBtn.addEventListener("click", () => {
-  localStorage.removeItem(TOKEN_KEY);
-  githubToken.value = "";
-  setUploadStatus("토큰 삭제 완료");
-});
-
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  if (!await isUploadPasswordOk()) {
+    setUploadStatus("업로드 비밀번호가 틀렸습니다.", true);
+    return;
+  }
 
   if (!fileInput.files.length) {
     setUploadStatus("저장할 사진을 먼저 선택해 주세요.", true);
@@ -104,6 +90,7 @@ uploadForm.addEventListener("submit", async (event) => {
 
     setUploadStatus(`${saved}개 저장 완료`);
     fileInput.value = "";
+    uploadPassword.value = "";
     await loadPhotos();
     showView("gallery");
   } catch (err) {
@@ -113,6 +100,19 @@ uploadForm.addEventListener("submit", async (event) => {
     uploadBtn.disabled = false;
   }
 });
+
+async function isUploadPasswordOk() {
+  const input = uploadPassword.value.trim();
+  if (!input) return false;
+
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const hash = [...new Uint8Array(digest)]
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+
+  return hash === UPLOAD_PASSWORD_HASH;
+}
 
 async function uploadToLocal(files) {
   const formData = new FormData();
@@ -133,12 +133,10 @@ async function uploadToLocal(files) {
 }
 
 async function uploadToGithub(files, folder) {
-  const token = githubToken.value.trim() || localStorage.getItem(TOKEN_KEY);
+  const token = GITHUB_TOKEN.trim();
   if (!token) {
-    throw new Error("GitHub Pages에서 업로드하려면 GitHub 토큰을 먼저 저장해 주세요.");
+    throw new Error("app.js의 GITHUB_TOKEN 빈칸에 GitHub 토큰을 넣어 주세요.");
   }
-
-  localStorage.setItem(TOKEN_KEY, token);
 
   let saved = 0;
   for (const file of files) {
@@ -290,7 +288,7 @@ async function loadPhotos() {
     try {
       allItems = await walk(CONFIG.photoDir);
       useLocalApi = false;
-      setUploadStatus("GitHub Pages 모드입니다. 토큰을 저장하면 어디서든 업로드할 수 있습니다.");
+      setUploadStatus("GitHub 업로드 모드입니다. app.js의 GITHUB_TOKEN 값이 필요합니다.");
     } catch (err) {
       console.error(err);
       countText.textContent = "불러오기 실패";

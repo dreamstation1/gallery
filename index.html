@@ -67,17 +67,10 @@
           사진 선택
           <input id="fileInput" name="files" type="file" accept="image/*,video/*,.pdf" multiple />
         </label>
-        <div class="token-box">
-          <label>
-            GitHub 토큰
-            <input id="githubToken" type="password" autocomplete="off" placeholder="처음 한 번만 입력" />
-          </label>
-          <div class="token-actions">
-            <button id="saveTokenBtn" class="soft" type="button">토큰 저장</button>
-            <button id="clearTokenBtn" class="soft" type="button">삭제</button>
-          </div>
-          <p class="hint">GitHub Pages에서 업로드할 때만 필요합니다. 이 값은 현재 브라우저에만 저장되고 파일에는 들어가지 않습니다.</p>
-        </div>
+        <label>
+          업로드 비밀번호
+          <input id="uploadPassword" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호 입력" />
+        </label>
         <button id="uploadBtn" class="primary" type="submit">저장하기</button>
         <p id="uploadStatus" class="status"></p>
       </form>
@@ -98,11 +91,12 @@
         <h2>폰에서 올리는 법</h2>
         <ol>
           <li>이 파일들을 GitHub에 올리고 GitHub Pages 주소를 폰에서 엽니다.</li>
-          <li>업로드 탭에서 GitHub 토큰을 한 번 저장합니다.</li>
-          <li>폴더명을 쓰고 사진을 선택한 뒤 저장합니다.</li>
+          <li><b>app.js</b>의 <b>GITHUB_TOKEN</b> 빈칸에 토큰을 넣습니다.</li>
+          <li>업로드 탭에서 폴더명을 쓰고 사진을 여러 장 선택합니다.</li>
+          <li>업로드 비밀번호를 입력한 뒤 저장합니다.</li>
           <li>사진은 GitHub 저장소의 <b>photos</b> 폴더에 커밋됩니다.</li>
         </ol>
-        <p>토큰은 GitHub에서 Fine-grained token으로 만들고, 이 저장소의 Contents 권한을 Read and write로 주면 됩니다.</p>
+        <p>빈 폴더만 따로 만드는 것은 GitHub에서 지원하지 않습니다. 새 폴더명으로 사진을 올리면 그때 폴더가 생깁니다.</p>
       </div>
     </section>
   </main>

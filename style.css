@@ -330,6 +330,16 @@ select {
   background: rgba(255,255,255,.035);
 }
 
+.token-box summary {
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.token-box[open] summary {
+  margin-bottom: 10px;
+}
+
 .token-actions {
   display: flex;
   gap: 8px;
