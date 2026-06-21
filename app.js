@@ -5,6 +5,7 @@ const CONFIG = {
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
 const VIDEO_EXT = [".mp4", ".webm", ".mov"];
 const FILE_EXT = [".pdf"];
+const NEW_FOLDER_VALUE = "__new__";
 
 let allItems = [];
 let folders = [];
@@ -21,18 +22,20 @@ const countText = $("countText");
 const folderCount = $("folderCount");
 const folderGrid = $("folderGrid");
 const folderSelect = $("folderSelect");
-const folderList = $("folderList");
 const searchInput = $("searchInput");
 const refreshBtn = $("refreshBtn");
 const manageBtn = $("manageBtn");
 const managePanel = $("managePanel");
 const selectedCount = $("selectedCount");
-const moveFolderInput = $("moveFolderInput");
+const moveFolderSelect = $("moveFolderSelect");
+const moveFolderNew = $("moveFolderNew");
 const managePassword = $("managePassword");
 const moveBtn = $("moveBtn");
 const deleteBtn = $("deleteBtn");
 const uploadForm = $("uploadForm");
-const uploadFolder = $("uploadFolder");
+const uploadFolderSelect = $("uploadFolderSelect");
+const uploadFolderNewWrap = $("uploadFolderNewWrap");
+const uploadFolderNew = $("uploadFolderNew");
 const fileInput = $("fileInput");
 const uploadBtn = $("uploadBtn");
 const uploadStatus = $("uploadStatus");
@@ -48,7 +51,6 @@ document.querySelectorAll(".nav, .mobile-nav").forEach(btn => {
 function showView(id) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("show"));
   document.getElementById(id).classList.add("show");
-
   document.querySelectorAll(".nav, .mobile-nav").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.view === id);
   });
@@ -64,6 +66,8 @@ folderSelect.addEventListener("change", () => {
   renderGallery();
 });
 
+uploadFolderSelect.addEventListener("change", syncFolderInputs);
+moveFolderSelect.addEventListener("change", syncFolderInputs);
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
 manageBtn.addEventListener("click", toggleManageMode);
@@ -83,16 +87,23 @@ uploadForm.addEventListener("submit", async (event) => {
     return;
   }
 
+  const folder = getChosenFolder(uploadFolderSelect, uploadFolderNew);
+  if (!folder) {
+    setUploadStatus("폴더를 선택하거나 새 폴더명을 입력해 주세요.", true);
+    return;
+  }
+
   uploadBtn.disabled = true;
   setUploadStatus("저장하는 중...");
 
   try {
     const files = [...fileInput.files];
-    const saved = await uploadToCloudflare(files, uploadFolder.value.trim());
+    const saved = await uploadToCloudflare(files, folder);
 
     setUploadStatus(`${saved}개 저장 완료`);
     fileInput.value = "";
     uploadPassword.value = "";
+    uploadFolderNew.value = "";
     await loadPhotos();
     showView("gallery");
   } catch (err) {
@@ -126,7 +137,6 @@ async function uploadToCloudflare(files, folder) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `업로드 실패: ${res.status}`);
-
   return data.saved || fileCount;
 }
 
@@ -136,14 +146,15 @@ async function moveSelected() {
     return;
   }
 
-  if (!moveFolderInput.value.trim()) {
-    setUploadStatus("옮길 폴더명을 입력해 주세요.", true);
+  const folder = getChosenFolder(moveFolderSelect, moveFolderNew);
+  if (!folder) {
+    setUploadStatus("옮길 폴더를 선택하거나 새 폴더명을 입력해 주세요.", true);
     return;
   }
 
   await manageRequest("/move", {
     paths: [...selectedPaths],
-    folder: moveFolderInput.value.trim(),
+    folder,
     password: managePassword.value.trim()
   }, "이동 완료");
 }
@@ -182,6 +193,7 @@ async function manageRequest(path, body, successText) {
     setUploadStatus(`${successText}: ${data.changed || 0}개`);
     selectedPaths.clear();
     managePassword.value = "";
+    moveFolderNew.value = "";
     await loadPhotos();
     updateManagePanel();
   } catch (err) {
@@ -225,13 +237,26 @@ function ensureApiBase() {
 }
 
 function syncFolders() {
-  folderSelect.innerHTML = `<option value="">전체</option>` + folders.map(folder => {
+  const folderOptions = folders.length ? folders : ["기본"];
+  const optionsHtml = folderOptions.map(folder => {
     return `<option value="${escapeHtml(folder)}">${escapeHtml(folder)}</option>`;
   }).join("");
 
-  folderList.innerHTML = folders.map(folder => {
-    return `<option value="${escapeHtml(folder)}"></option>`;
-  }).join("");
+  folderSelect.innerHTML = `<option value="">전체</option>` + optionsHtml;
+  uploadFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
+  moveFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
+
+  syncFolderInputs();
+}
+
+function syncFolderInputs() {
+  uploadFolderNewWrap.classList.toggle("hidden", uploadFolderSelect.value !== NEW_FOLDER_VALUE);
+  moveFolderNew.classList.toggle("hidden", moveFolderSelect.value !== NEW_FOLDER_VALUE);
+}
+
+function getChosenFolder(selectEl, inputEl) {
+  if (selectEl.value === NEW_FOLDER_VALUE) return inputEl.value.trim();
+  return selectEl.value.trim() || "기본";
 }
 
 function filteredItems() {

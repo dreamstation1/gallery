@@ -51,7 +51,8 @@
       </div>
       <div id="managePanel" class="manage-panel hidden">
         <p id="selectedCount">0개 선택됨</p>
-        <input id="moveFolderInput" type="text" list="folderList" placeholder="옮길 폴더명" />
+        <select id="moveFolderSelect"></select>
+        <input id="moveFolderNew" class="hidden" type="text" placeholder="새 폴더명" />
         <input id="managePassword" type="password" inputmode="numeric" placeholder="비밀번호" />
         <button id="moveBtn" class="soft">이동</button>
         <button id="deleteBtn" class="danger">삭제</button>
@@ -70,8 +71,11 @@
       <form id="uploadForm" class="upload-panel">
         <label>
           폴더
-          <input id="uploadFolder" name="folder" type="text" list="folderList" placeholder="예: 660번 / 여행 / 기본" />
-          <datalist id="folderList"></datalist>
+          <select id="uploadFolderSelect"></select>
+        </label>
+        <label id="uploadFolderNewWrap" class="hidden">
+          새 폴더명
+          <input id="uploadFolderNew" type="text" placeholder="예: 660번 / 야간 / 기본" />
         </label>
         <label>
           사진 선택
@@ -100,14 +104,12 @@
       <div class="guide-card">
         <h2>폰에서 올리는 법</h2>
         <ol>
-          <li>이 파일들을 GitHub에 올리고 GitHub Pages 주소를 폰에서 엽니다.</li>
-          <li>Cloudflare에서 R2 버킷과 Worker를 만듭니다.</li>
-          <li><b>app.js</b>의 <b>apiBase</b>를 Worker 주소로 바꿉니다.</li>
-          <li>업로드 탭에서 폴더명을 쓰고 사진을 여러 장 선택합니다.</li>
-          <li>업로드 비밀번호를 입력한 뒤 저장합니다.</li>
-          <li>사진은 R2의 <b>photos</b> 경로에 저장됩니다.</li>
+          <li>GitHub Pages 주소를 폰에서 엽니다.</li>
+          <li>업로드 탭에서 기존 폴더를 선택하거나 새 폴더 추가를 선택합니다.</li>
+          <li>사진을 여러 장 선택하고 비밀번호를 입력한 뒤 저장합니다.</li>
+          <li>이미 올린 사진은 선택 모드에서 이동하거나 삭제할 수 있습니다.</li>
         </ol>
-        <p>새 폴더명으로 사진을 올리면 그 폴더가 자동으로 생깁니다.</p>
+        <p>새 폴더는 그 폴더명으로 사진을 업로드하거나 이동하면 자동으로 생깁니다.</p>
       </div>
     </section>
   </main>
@@ -124,6 +126,6 @@
     <div id="viewerBody"></div>
   </dialog>
 
-  <script src="./app.js?v=20260622-manage"></script>
+  <script src="./app.js?v=20260622-folder-select"></script>
 </body>
 </html>
