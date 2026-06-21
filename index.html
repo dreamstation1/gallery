@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>𝒔𝒋_𝒚𝒄𝟭𝟮</title>
+  <title>sj_yc12 갤러리</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -12,11 +12,12 @@
   <aside class="sidebar">
     <a class="brand" href="./index.html"><span></span>sj_yc12</a>
     <nav>
-    <button class="nav active" data-view="gallery">사진</button>
-    <button class="nav" data-view="folders">폴더</button>
-    <button class="nav" data-view="guide">올리는 법</button>
-    <a class="nav insta-link" href="https://www.instagram.com/sj_yc12" target="_blank" rel="noreferrer">Instagram</a>
-</nav>
+      <button class="nav active" data-view="gallery">사진</button>
+      <button class="nav" data-view="upload">업로드</button>
+      <button class="nav" data-view="folders">폴더</button>
+      <button class="nav" data-view="guide">사용법</button>
+      <a class="nav insta-link" href="https://www.instagram.com/sj_yc12" target="_blank" rel="noreferrer">Instagram</a>
+    </nav>
   </aside>
 
   <main class="app">
@@ -26,8 +27,8 @@
 
     <section class="top">
       <div>
-        <p>𝓟𝓱𝓸𝓽𝓸 𝓖𝓪𝓵𝓵𝓮𝓻𝔂 사이트 제작자:오승재</p>
-        <h1>𝓟𝓱𝓸𝓽𝓸 𝓡𝓮𝓬𝓸𝓻𝓭𝓼</h1>
+        <p>폰에서 바로 올리고 폴더별로 정리하는 갤러리</p>
+        <h1>사진 보관함</h1>
       </div>
       <div class="tools">
         <input id="searchInput" type="search" placeholder="검색" />
@@ -49,6 +50,39 @@
       <div id="empty" class="empty hidden">사진이 없습니다</div>
     </section>
 
+    <section id="upload" class="view">
+      <div class="bar">
+        <div>
+          <h2>업로드</h2>
+          <p>GitHub Pages에서도 바로 photos 폴더에 저장됩니다</p>
+        </div>
+      </div>
+      <form id="uploadForm" class="upload-panel">
+        <label>
+          폴더
+          <input id="uploadFolder" name="folder" type="text" list="folderList" placeholder="예: 660번 / 여행 / 기본" />
+          <datalist id="folderList"></datalist>
+        </label>
+        <label>
+          사진 선택
+          <input id="fileInput" name="files" type="file" accept="image/*,video/*,.pdf" multiple />
+        </label>
+        <div class="token-box">
+          <label>
+            GitHub 토큰
+            <input id="githubToken" type="password" autocomplete="off" placeholder="처음 한 번만 입력" />
+          </label>
+          <div class="token-actions">
+            <button id="saveTokenBtn" class="soft" type="button">토큰 저장</button>
+            <button id="clearTokenBtn" class="soft" type="button">삭제</button>
+          </div>
+          <p class="hint">GitHub Pages에서 업로드할 때만 필요합니다. 이 값은 현재 브라우저에만 저장되고 파일에는 들어가지 않습니다.</p>
+        </div>
+        <button id="uploadBtn" class="primary" type="submit">저장하기</button>
+        <p id="uploadStatus" class="status"></p>
+      </form>
+    </section>
+
     <section id="folders" class="view">
       <div class="bar">
         <div>
@@ -61,28 +95,27 @@
 
     <section id="guide" class="view">
       <div class="guide-card">
-        <h2>사진 올리는 법</h2>
+        <h2>폰에서 올리는 법</h2>
         <ol>
-          <li>GitHub 저장소에 들어갑니다.</li>
-          <li><b>photos</b> 폴더를 엽니다.</li>
-          <li>Add file → Upload files를 누릅니다.</li>
-          <li>사진을 올리고 Commit changes를 누릅니다.</li>
-          <li>사이트에서 새로고침을 누르면 반영됩니다.</li>
+          <li>이 파일들을 GitHub에 올리고 GitHub Pages 주소를 폰에서 엽니다.</li>
+          <li>업로드 탭에서 GitHub 토큰을 한 번 저장합니다.</li>
+          <li>폴더명을 쓰고 사진을 선택한 뒤 저장합니다.</li>
+          <li>사진은 GitHub 저장소의 <b>photos</b> 폴더에 커밋됩니다.</li>
         </ol>
-        <p>폴더를 만들고 싶으면 <b>photos/여행/사진.jpg</b> 처럼 폴더 안에 사진을 넣으면 됩니다.</p>
+        <p>토큰은 GitHub에서 Fine-grained token으로 만들고, 이 저장소의 Contents 권한을 Read and write로 주면 됩니다.</p>
       </div>
     </section>
   </main>
 
-<nav class="bottom-nav">
+  <nav class="bottom-nav">
     <button class="mobile-nav active" data-view="gallery">사진</button>
+    <button class="mobile-nav" data-view="upload">업로드</button>
     <button class="mobile-nav" data-view="folders">폴더</button>
-    <button class="mobile-nav" data-view="guide">올리는 법</button>
-    <a class="mobile-nav insta-link" href="https://www.instagram.com/sj_yc12" target="_blank" rel="noreferrer">인스타</a>
-</nav>
+    <button class="mobile-nav" data-view="guide">사용법</button>
+  </nav>
 
   <dialog id="viewer" class="viewer">
-    <button id="closeViewer" class="close">×</button>
+    <button id="closeViewer" class="close">x</button>
     <div id="viewerBody"></div>
   </dialog>
 

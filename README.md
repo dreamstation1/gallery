@@ -1,50 +1,45 @@
-# sj_yc12 GitHub 사진 자동 갤러리
+# sj_yc12 갤러리
 
-Firebase 없이 GitHub에 올린 사진을 자동으로 보여주는 버전입니다.
+폰에서 사진을 올리면 GitHub 저장소의 `photos` 폴더에 바로 저장되는 갤러리입니다.
 
-## 파일 구조
+## GitHub Pages에서 쓰기
 
-```txt
-index.html
-app.js
-style.css
-README.md
-photos/
+1. 이 폴더 내용을 GitHub 저장소에 올립니다.
+2. GitHub Pages를 켭니다.
+3. 폰에서 GitHub Pages 주소를 엽니다.
+4. 업로드 탭에서 GitHub 토큰을 한 번 저장합니다.
+5. 사진을 선택하고 저장합니다.
+
+토큰은 코드에 저장하지 않고 현재 브라우저의 localStorage에만 저장됩니다.
+
+## 토큰 권한
+
+GitHub에서 Fine-grained personal access token을 만들고 다음처럼 설정합니다.
+
+- Repository access: 이 갤러리 저장소만 선택
+- Permissions: Contents 권한을 Read and write
+
+토큰을 공개 저장소 코드에 직접 넣으면 안 됩니다.
+
+## 로컬 서버로도 쓰기
+
+PC에서만 빠르게 확인하려면 아래 명령으로 로컬 서버를 켤 수 있습니다.
+
+```powershell
+py server.py
 ```
 
-## 사진 올리는 법
+## 사진 올리기
 
-1. GitHub 저장소에서 `photos` 폴더를 엽니다.
-2. Add file → Upload files를 누릅니다.
-3. 사진, 영상, PDF를 올립니다.
-4. Commit changes를 누릅니다.
-5. 사이트에서 새로고침을 누릅니다.
+1. 폰 브라우저에서 서버 주소를 엽니다.
+2. `업로드` 탭으로 갑니다.
+3. 폴더명을 입력합니다. 비워두면 `기본`으로 저장됩니다.
+4. 사진을 여러 장 선택하고 `저장하기`를 누릅니다.
 
-## 폴더 만들기
+새 폴더명은 자동으로 만들어집니다. 예를 들어 폴더에 `660/야간`이라고 쓰면 `photos/660/야간/` 폴더에 저장됩니다.
 
-GitHub에서 폴더를 직접 만들 수 없을 때는 이렇게 경로를 넣어 업로드하면 됩니다.
+## 지원 파일
 
-```txt
-photos/여행/사진1.jpg
-photos/버스/사진2.jpg
-photos/야경/사진3.jpg
-```
-
-## 저장소 이름 수정
-
-만약 저장소 이름이 `gallery`가 아니면 `app.js` 맨 위를 바꾸세요.
-
-```js
-const CONFIG = {
-  owner: "dreamstation1",
-  repo: "gallery",
-  branch: "main",
-  photoDir: "photos"
-};
-```
-
-예를 들어 저장소 이름이 `sj_yc12`면:
-
-```js
-repo: "sj_yc12"
-```
+- 사진: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.avif`
+- 영상: `.mp4`, `.webm`, `.mov`
+- 문서: `.pdf`

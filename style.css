@@ -5,6 +5,8 @@
   --text: #eef5ff;
   --muted: #8f9eb5;
   --accent: #92b7ff;
+  --good: #7ce0b6;
+  --danger: #ff9a9a;
   --accent-soft: rgba(146, 183, 255, .15);
   --shadow: 0 20px 70px rgba(0,0,0,.32);
 }
@@ -124,7 +126,7 @@ select {
 h1 {
   margin: 0;
   font-size: clamp(30px, 5vw, 56px);
-  letter-spacing: -.055em;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -293,6 +295,84 @@ select {
 .guide-card {
   max-width: 720px;
   padding: 24px;
+}
+
+.upload-panel {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 680px);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: 0 14px 42px rgba(0,0,0,.18);
+}
+
+.upload-panel label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.upload-panel input[type="file"] {
+  height: auto;
+  min-height: 48px;
+  padding: 12px;
+}
+
+.token-box {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(225,236,255,.1);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+}
+
+.token-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.token-actions .soft {
+  text-align: center;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.primary {
+  width: fit-content;
+  min-height: 44px;
+  border: 1px solid rgba(124,224,182,.28);
+  border-radius: 15px;
+  padding: 0 18px;
+  color: #04110d;
+  background: var(--good);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+.status {
+  min-height: 20px;
+  margin: 0;
+  color: var(--good);
+  font-size: 14px;
+}
+
+.status.error {
+  color: var(--danger);
 }
 
 .guide-card h2 {
