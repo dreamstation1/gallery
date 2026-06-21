@@ -5,7 +5,7 @@ const CONFIG = {
   photoDir: "photos"
 };
 
-const GITHUB_TOKEN = "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";
+const GITHUB_TOKEN = "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";
 
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
 const VIDEO_EXT = [".mp4", ".webm", ".mov"];
