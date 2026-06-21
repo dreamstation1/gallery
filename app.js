@@ -5,7 +5,7 @@ const CONFIG = {
   photoDir: "photos"
 };
 
-const GITHUB_TOKEN = "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";
+const GITHUB_TOKEN = "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";
 
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
 const VIDEO_EXT = [".mp4", ".webm", ".mov"];
@@ -16,6 +16,11 @@ let folders = [];
 let currentFolder = "";
 let searchText = "";
 let useLocalApi = true;
+
+const IS_LOCAL_SERVER =
+  location.hostname === "localhost" ||
+  location.hostname === "127.0.0.1" ||
+  location.hostname === "";
 
 const $ = (id) => document.getElementById(id);
 
@@ -161,6 +166,12 @@ async function uploadToGithub(files, folder) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        throw new Error("GitHub 토큰이 틀렸거나 무효화됐습니다. 새 토큰을 만들어 app.js의 GITHUB_TOKEN에 다시 넣어 주세요.");
+      }
+      if (res.status === 403) {
+        throw new Error("GitHub 토큰 권한이 부족합니다. Contents 권한을 Read and write로 설정해 주세요.");
+      }
       throw new Error(data.message || `GitHub 업로드 실패: ${res.status}`);
     }
 
@@ -281,25 +292,34 @@ async function loadPhotos() {
   countText.textContent = "불러오는 중";
   empty.classList.add("hidden");
 
-  try {
-    allItems = await loadLocalPhotos();
-    useLocalApi = true;
-  } catch (localErr) {
+  if (IS_LOCAL_SERVER) {
     try {
-      allItems = await walk(CONFIG.photoDir);
-      useLocalApi = false;
-      setUploadStatus("GitHub 업로드 모드입니다. app.js의 GITHUB_TOKEN 값이 필요합니다.");
-    } catch (err) {
-      console.error(err);
-      countText.textContent = "불러오기 실패";
-      grid.innerHTML = `
-        <div class="empty show-error">
-          사진을 불러오지 못했습니다.<br>
-          로컬에서는 py server.py를 실행한 뒤 다시 열어 주세요.
-        </div>
-      `;
+      allItems = await loadLocalPhotos();
+      useLocalApi = true;
+      folders = [...new Set(allItems.map(item => item.folder))].sort((a, b) => a.localeCompare(b, "ko"));
+      syncFolders();
+      renderGallery();
+      renderFolders();
       return;
+    } catch (localErr) {
+      console.warn("로컬 API를 찾지 못해 GitHub에서 사진을 불러옵니다.", localErr);
     }
+  }
+
+  try {
+    allItems = await walk(CONFIG.photoDir);
+    useLocalApi = false;
+    setUploadStatus("GitHub 업로드 모드입니다. app.js의 GITHUB_TOKEN 값이 필요합니다.");
+  } catch (err) {
+    console.error(err);
+    countText.textContent = "불러오기 실패";
+    grid.innerHTML = `
+      <div class="empty show-error">
+        사진을 불러오지 못했습니다.<br>
+        저장소 이름과 photos 폴더를 확인해 주세요.
+      </div>
+    `;
+    return;
   }
 
   folders = [...new Set(allItems.map(item => item.folder))].sort((a, b) => a.localeCompare(b, "ko"));
