@@ -10,6 +10,8 @@ let allItems = [];
 let folders = [];
 let currentFolder = "";
 let searchText = "";
+let manageMode = false;
+const selectedPaths = new Set();
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,6 +24,13 @@ const folderSelect = $("folderSelect");
 const folderList = $("folderList");
 const searchInput = $("searchInput");
 const refreshBtn = $("refreshBtn");
+const manageBtn = $("manageBtn");
+const managePanel = $("managePanel");
+const selectedCount = $("selectedCount");
+const moveFolderInput = $("moveFolderInput");
+const managePassword = $("managePassword");
+const moveBtn = $("moveBtn");
+const deleteBtn = $("deleteBtn");
 const uploadForm = $("uploadForm");
 const uploadFolder = $("uploadFolder");
 const fileInput = $("fileInput");
@@ -57,6 +66,9 @@ folderSelect.addEventListener("change", () => {
 
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
+manageBtn.addEventListener("click", toggleManageMode);
+moveBtn.addEventListener("click", moveSelected);
+deleteBtn.addEventListener("click", deleteSelected);
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -116,6 +128,66 @@ async function uploadToCloudflare(files, folder) {
   if (!res.ok) throw new Error(data.error || `업로드 실패: ${res.status}`);
 
   return data.saved || fileCount;
+}
+
+async function moveSelected() {
+  if (!selectedPaths.size) {
+    setUploadStatus("이동할 파일을 선택해 주세요.", true);
+    return;
+  }
+
+  if (!moveFolderInput.value.trim()) {
+    setUploadStatus("옮길 폴더명을 입력해 주세요.", true);
+    return;
+  }
+
+  await manageRequest("/move", {
+    paths: [...selectedPaths],
+    folder: moveFolderInput.value.trim(),
+    password: managePassword.value.trim()
+  }, "이동 완료");
+}
+
+async function deleteSelected() {
+  if (!selectedPaths.size) {
+    setUploadStatus("삭제할 파일을 선택해 주세요.", true);
+    return;
+  }
+
+  if (!confirm(`${selectedPaths.size}개 파일을 삭제할까요?`)) return;
+
+  await manageRequest("/delete", {
+    paths: [...selectedPaths],
+    password: managePassword.value.trim()
+  }, "삭제 완료");
+}
+
+async function manageRequest(path, body, successText) {
+  if (!body.password) {
+    setUploadStatus("관리 비밀번호를 입력해 주세요.", true);
+    return;
+  }
+
+  try {
+    ensureApiBase();
+    const res = await fetch(`${CONFIG.apiBase}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `작업 실패: ${res.status}`);
+
+    setUploadStatus(`${successText}: ${data.changed || 0}개`);
+    selectedPaths.clear();
+    managePassword.value = "";
+    await loadPhotos();
+    updateManagePanel();
+  } catch (err) {
+    console.error(err);
+    setUploadStatus(err.message || "작업 실패", true);
+  }
 }
 
 async function loadPhotos() {
@@ -179,6 +251,11 @@ function renderGallery() {
 
   grid.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
+      if (manageMode) {
+        toggleSelected(card.dataset.path);
+        return;
+      }
+
       const item = allItems.find(x => x.path === card.dataset.path);
       if (item) openViewer(item);
     });
@@ -197,7 +274,8 @@ function cardHtml(item) {
   }
 
   return `
-    <article class="card" data-path="${escapeHtml(item.path)}">
+    <article class="card ${selectedPaths.has(item.path) ? "selected" : ""}" data-path="${escapeHtml(item.path)}">
+      <span class="select-mark"></span>
       <div class="thumb">${media}</div>
       <div class="meta">
         <p>${escapeHtml(item.folder)}</p>
@@ -231,6 +309,30 @@ function renderFolders() {
       renderGallery();
     });
   });
+}
+
+function toggleManageMode() {
+  manageMode = !manageMode;
+  selectedPaths.clear();
+  manageBtn.textContent = manageMode ? "취소" : "선택";
+  managePanel.classList.toggle("hidden", !manageMode);
+  renderGallery();
+  updateManagePanel();
+}
+
+function toggleSelected(path) {
+  if (selectedPaths.has(path)) {
+    selectedPaths.delete(path);
+  } else {
+    selectedPaths.add(path);
+  }
+
+  renderGallery();
+  updateManagePanel();
+}
+
+function updateManagePanel() {
+  selectedCount.textContent = `${selectedPaths.size}개 선택됨`;
 }
 
 function openViewer(item) {

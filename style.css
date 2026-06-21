@@ -168,6 +168,11 @@ select {
   margin-bottom: 18px;
 }
 
+.bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .bar h2 {
   margin: 0;
   font-size: 21px;
@@ -197,8 +202,33 @@ select {
 }
 
 .card {
+  position: relative;
   cursor: zoom-in;
   transition: .18s ease;
+}
+
+.card.selected {
+  outline: 2px solid var(--good);
+  border-color: rgba(124,224,182,.62);
+}
+
+.select-mark {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255,255,255,.86);
+  border-radius: 99px;
+  background: rgba(0,0,0,.34);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card.selected .select-mark {
+  opacity: 1;
+  background: var(--good);
 }
 
 .card:hover,
@@ -306,6 +336,35 @@ select {
   border-radius: 24px;
   background: var(--panel);
   box-shadow: 0 14px 42px rgba(0,0,0,.18);
+}
+
+.manage-panel {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) minmax(130px, 180px) auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+}
+
+.manage-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.danger {
+  min-height: 44px;
+  border: 1px solid rgba(255,154,154,.35);
+  border-radius: 15px;
+  padding: 0 15px;
+  color: #2a0505;
+  background: var(--danger);
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .upload-panel label {
@@ -534,6 +593,10 @@ select {
   .card,
   .folder-card {
     border-radius: 19px;
+  }
+
+  .manage-panel {
+    grid-template-columns: 1fr;
   }
 
   .meta {

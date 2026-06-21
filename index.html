@@ -44,7 +44,17 @@
           <h2>사진</h2>
           <p id="countText">불러오는 중</p>
         </div>
-        <button id="refreshBtn" class="soft">새로고침</button>
+        <div class="bar-actions">
+          <button id="manageBtn" class="soft">선택</button>
+          <button id="refreshBtn" class="soft">새로고침</button>
+        </div>
+      </div>
+      <div id="managePanel" class="manage-panel hidden">
+        <p id="selectedCount">0개 선택됨</p>
+        <input id="moveFolderInput" type="text" list="folderList" placeholder="옮길 폴더명" />
+        <input id="managePassword" type="password" inputmode="numeric" placeholder="비밀번호" />
+        <button id="moveBtn" class="soft">이동</button>
+        <button id="deleteBtn" class="danger">삭제</button>
       </div>
       <div id="grid" class="grid"></div>
       <div id="empty" class="empty hidden">사진이 없습니다</div>
@@ -114,6 +124,6 @@
     <div id="viewerBody"></div>
   </dialog>
 
-  <script src="./app.js?v=20260622-r2"></script>
+  <script src="./app.js?v=20260622-manage"></script>
 </body>
 </html>
