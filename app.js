@@ -9,6 +9,7 @@ const NEW_FOLDER_VALUE = "__new__";
 
 let allItems = [];
 let folders = [];
+let folderCovers = {};
 let currentFolder = "";
 let searchText = "";
 let manageMode = false;
@@ -22,6 +23,12 @@ const countText = $("countText");
 const folderCount = $("folderCount");
 const folderGrid = $("folderGrid");
 const folderSelect = $("folderSelect");
+const coverForm = $("coverForm");
+const coverFolderSelect = $("coverFolderSelect");
+const coverFolderNew = $("coverFolderNew");
+const coverFileInput = $("coverFileInput");
+const coverPassword = $("coverPassword");
+const coverBtn = $("coverBtn");
 const searchInput = $("searchInput");
 const refreshBtn = $("refreshBtn");
 const manageBtn = $("manageBtn");
@@ -68,11 +75,13 @@ folderSelect.addEventListener("change", () => {
 
 uploadFolderSelect.addEventListener("change", syncFolderInputs);
 moveFolderSelect.addEventListener("change", syncFolderInputs);
+coverFolderSelect.addEventListener("change", syncFolderInputs);
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
 manageBtn.addEventListener("click", toggleManageMode);
 moveBtn.addEventListener("click", moveSelected);
 deleteBtn.addEventListener("click", deleteSelected);
+coverForm.addEventListener("submit", saveFolderCover);
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -202,6 +211,56 @@ async function manageRequest(path, body, successText) {
   }
 }
 
+async function saveFolderCover(event) {
+  event.preventDefault();
+
+  const folder = getChosenFolder(coverFolderSelect, coverFolderNew);
+  if (!folder) {
+    setUploadStatus("대표사진을 넣을 폴더를 선택하거나 새 폴더명을 입력해 주세요.", true);
+    return;
+  }
+
+  if (!coverFileInput.files.length) {
+    setUploadStatus("대표사진 파일을 선택해 주세요.", true);
+    return;
+  }
+
+  if (!coverPassword.value.trim()) {
+    setUploadStatus("비밀번호를 입력해 주세요.", true);
+    return;
+  }
+
+  coverBtn.disabled = true;
+  setUploadStatus("대표사진 저장 중...");
+
+  try {
+    ensureApiBase();
+    const formData = new FormData();
+    formData.append("folder", folder);
+    formData.append("password", coverPassword.value.trim());
+    formData.append("file", coverFileInput.files[0]);
+
+    const res = await fetch(`${CONFIG.apiBase}/cover`, {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `대표사진 저장 실패: ${res.status}`);
+
+    setUploadStatus("대표사진 저장 완료");
+    coverFileInput.value = "";
+    coverPassword.value = "";
+    coverFolderNew.value = "";
+    await loadPhotos();
+  } catch (err) {
+    console.error(err);
+    setUploadStatus(err.message || "대표사진 저장 실패", true);
+  } finally {
+    coverBtn.disabled = false;
+  }
+}
+
 async function loadPhotos() {
   grid.innerHTML = "";
   countText.textContent = "불러오는 중";
@@ -212,8 +271,11 @@ async function loadPhotos() {
     const res = await fetch(`${CONFIG.apiBase}/items`, { cache: "no-store" });
     if (!res.ok) throw new Error(`목록 불러오기 실패: ${res.status}`);
 
-    allItems = await res.json();
-    folders = [...new Set(allItems.map(item => item.folder))].sort((a, b) => a.localeCompare(b, "ko"));
+    const data = await res.json();
+    allItems = Array.isArray(data) ? data : data.items || [];
+    folderCovers = Array.isArray(data) ? {} : data.covers || {};
+    folders = [...new Set([...allItems.map(item => item.folder), ...Object.keys(folderCovers)])]
+      .sort((a, b) => a.localeCompare(b, "ko"));
     syncFolders();
     renderGallery();
     renderFolders();
@@ -245,6 +307,7 @@ function syncFolders() {
   folderSelect.innerHTML = `<option value="">전체</option>` + optionsHtml;
   uploadFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
   moveFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
+  coverFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
 
   syncFolderInputs();
 }
@@ -252,6 +315,7 @@ function syncFolders() {
 function syncFolderInputs() {
   uploadFolderNewWrap.classList.toggle("hidden", uploadFolderSelect.value !== NEW_FOLDER_VALUE);
   moveFolderNew.classList.toggle("hidden", moveFolderSelect.value !== NEW_FOLDER_VALUE);
+  coverFolderNew.classList.toggle("hidden", coverFolderSelect.value !== NEW_FOLDER_VALUE);
 }
 
 function getChosenFolder(selectEl, inputEl) {
@@ -315,9 +379,10 @@ function renderFolders() {
 
   folderGrid.innerHTML = folders.map(folder => {
     const count = allItems.filter(item => item.folder === folder).length;
+    const cover = folderCovers[folder] ? absoluteUrl(folderCovers[folder]) : "";
     return `
       <article class="folder-card" data-folder="${escapeHtml(folder)}">
-        <span></span>
+        <span class="${cover ? "has-cover" : ""}" ${cover ? `style="background-image:url('${escapeAttr(cover)}')"` : ""}></span>
         <div>
           <h3>${escapeHtml(folder)}</h3>
           <p>${count}개</p>
@@ -413,6 +478,10 @@ function escapeHtml(text = "") {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(text = "") {
+  return escapeHtml(text).replaceAll("`", "&#096;");
 }
 
 loadPhotos();

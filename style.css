@@ -292,6 +292,15 @@ select {
   border-radius: 15px;
   background: linear-gradient(135deg, rgba(216,230,255,.35), rgba(146,183,255,.12));
   border: 1px solid rgba(146,183,255,.2);
+  background-position: center;
+  background-size: cover;
+  flex: 0 0 auto;
+}
+
+.folder-card span.has-cover {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
 }
 
 .folder-card h3 {
@@ -336,6 +345,18 @@ select {
   border-radius: 24px;
   background: var(--panel);
   box-shadow: 0 14px 42px rgba(0,0,0,.18);
+}
+
+.cover-panel {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(180px, 1.2fr) minmax(130px, 180px) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
 }
 
 .manage-panel {
@@ -596,6 +617,10 @@ select {
   }
 
   .manage-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .cover-panel {
     grid-template-columns: 1fr;
   }
 
