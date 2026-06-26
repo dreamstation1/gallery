@@ -444,7 +444,9 @@ function openViewer(item) {
   viewerBody.innerHTML = `
     <div class="viewer-media">
       ${media}
-      <div class="watermark">Photo by sj_yc12</div>
+      <div class="watermark-pattern" aria-hidden="true">
+        ${Array.from({ length: 28 }, () => `<span>Photo by sj_yc12</span>`).join("")}
+      </div>
     </div>
     <div class="viewer-info">
       <h2>${escapeHtml(cleanName(item.name))}</h2>

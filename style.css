@@ -506,20 +506,28 @@ select {
   background: #020611;
 }
 
-.watermark {
+.watermark-pattern {
   position: absolute;
-  right: 18px;
-  bottom: 16px;
+  inset: -18%;
   z-index: 3;
-  padding: 7px 10px;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 999px;
-  color: rgba(255,255,255,.88);
-  background: rgba(0,0,0,.42);
-  font-size: 13px;
-  font-weight: 800;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 46px 34px;
+  align-content: center;
+  transform: rotate(-28deg);
+  opacity: .72;
   pointer-events: none;
-  text-shadow: 0 1px 3px rgba(0,0,0,.65);
+}
+
+.watermark-pattern span {
+  color: rgba(255,255,255,.34);
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow:
+    0 1px 3px rgba(0,0,0,.72),
+    0 0 1px rgba(0,0,0,.9);
+  white-space: nowrap;
 }
 
 .viewer-media img,
