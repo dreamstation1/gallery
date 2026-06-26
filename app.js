@@ -159,21 +159,27 @@ async function watermarkFile(file) {
   const image = await loadImage(file);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  const footerHeight = Math.max(58, Math.round(image.naturalHeight * 0.055));
 
   canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight + footerHeight;
+  canvas.height = image.naturalHeight;
 
   ctx.drawImage(image, 0, 0);
-  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
-  ctx.fillRect(0, image.naturalHeight, canvas.width, footerHeight);
 
   const fontSize = Math.max(24, Math.round(canvas.width * 0.025));
+  const padding = Math.max(22, Math.round(canvas.width * 0.018));
+  const textY = canvas.height - padding;
+
   ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
   ctx.font = `700 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("Photo by sj_yc12", canvas.width / 2, image.naturalHeight + footerHeight / 2);
+  ctx.textBaseline = "bottom";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+  ctx.shadowBlur = Math.max(4, Math.round(fontSize * 0.22));
+  ctx.shadowOffsetY = Math.max(2, Math.round(fontSize * 0.08));
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
+  ctx.strokeText("Photo by sj_yc12", canvas.width / 2, textY);
+  ctx.fillText("Photo by sj_yc12", canvas.width / 2, textY);
 
   URL.revokeObjectURL(image.src);
 
