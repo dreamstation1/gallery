@@ -37,6 +37,7 @@ const selectedCount = $("selectedCount");
 const moveFolderSelect = $("moveFolderSelect");
 const moveFolderNew = $("moveFolderNew");
 const managePassword = $("managePassword");
+const downloadBtn = $("downloadBtn");
 const moveBtn = $("moveBtn");
 const deleteBtn = $("deleteBtn");
 const uploadForm = $("uploadForm");
@@ -79,6 +80,7 @@ coverFolderSelect.addEventListener("change", syncFolderInputs);
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
 manageBtn.addEventListener("click", toggleManageMode);
+downloadBtn.addEventListener("click", downloadSelected);
 moveBtn.addEventListener("click", moveSelected);
 deleteBtn.addEventListener("click", deleteSelected);
 coverForm.addEventListener("submit", saveFolderCover);
@@ -90,7 +92,6 @@ uploadForm.addEventListener("submit", async (event) => {
     setUploadStatus("저장할 사진을 먼저 선택해 주세요.", true);
     return;
   }
-
   if (!uploadPassword.value.trim()) {
     setUploadStatus("업로드 비밀번호를 입력해 주세요.", true);
     return;
@@ -106,9 +107,7 @@ uploadForm.addEventListener("submit", async (event) => {
   setUploadStatus("저장하는 중...");
 
   try {
-    const files = [...fileInput.files];
-    const saved = await uploadToCloudflare(files, folder);
-
+    const saved = await uploadToCloudflare([...fileInput.files], folder);
     setUploadStatus(`${saved}개 저장 완료`);
     fileInput.value = "";
     uploadPassword.value = "";
@@ -125,7 +124,6 @@ uploadForm.addEventListener("submit", async (event) => {
 
 async function uploadToCloudflare(files, folder) {
   ensureApiBase();
-
   const formData = new FormData();
   formData.append("folder", folder);
   formData.append("password", uploadPassword.value.trim());
@@ -143,10 +141,40 @@ async function uploadToCloudflare(files, folder) {
     method: "POST",
     body: formData
   });
-
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `업로드 실패: ${res.status}`);
   return data.saved || fileCount;
+}
+
+async function downloadSelected() {
+  if (!selectedPaths.size) {
+    setUploadStatus("다운로드할 파일을 선택해 주세요.", true);
+    return;
+  }
+
+  await manageRequest("/download", {
+    paths: [...selectedPaths],
+    password: managePassword.value.trim()
+  }, "다운로드 준비 완료", async (data) => {
+    const files = data.files || [];
+    for (const file of files) {
+      await downloadFile(file.url, file.name);
+    }
+  });
+}
+
+async function downloadFile(url, name) {
+  const res = await fetch(absoluteUrl(url), { cache: "no-store" });
+  if (!res.ok) throw new Error(`${name} 다운로드 실패`);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 async function moveSelected() {
@@ -173,7 +201,6 @@ async function deleteSelected() {
     setUploadStatus("삭제할 파일을 선택해 주세요.", true);
     return;
   }
-
   if (!confirm(`${selectedPaths.size}개 파일을 삭제할까요?`)) return;
 
   await manageRequest("/delete", {
@@ -182,7 +209,7 @@ async function deleteSelected() {
   }, "삭제 완료");
 }
 
-async function manageRequest(path, body, successText) {
+async function manageRequest(path, body, successText, afterSuccess) {
   if (!body.password) {
     setUploadStatus("관리 비밀번호를 입력해 주세요.", true);
     return;
@@ -195,16 +222,19 @@ async function manageRequest(path, body, successText) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `작업 실패: ${res.status}`);
 
-    setUploadStatus(`${successText}: ${data.changed || 0}개`);
-    selectedPaths.clear();
+    if (afterSuccess) await afterSuccess(data);
+
+    setUploadStatus(data.changed === undefined ? successText : `${successText}: ${data.changed}개`);
+    if (path !== "/download") {
+      selectedPaths.clear();
+      moveFolderNew.value = "";
+      await loadPhotos();
+      updateManagePanel();
+    }
     managePassword.value = "";
-    moveFolderNew.value = "";
-    await loadPhotos();
-    updateManagePanel();
   } catch (err) {
     console.error(err);
     setUploadStatus(err.message || "작업 실패", true);
@@ -213,18 +243,15 @@ async function manageRequest(path, body, successText) {
 
 async function saveFolderCover(event) {
   event.preventDefault();
-
   const folder = getChosenFolder(coverFolderSelect, coverFolderNew);
   if (!folder) {
     setUploadStatus("대표사진을 넣을 폴더를 선택하거나 새 폴더명을 입력해 주세요.", true);
     return;
   }
-
   if (!coverFileInput.files.length) {
     setUploadStatus("대표사진 파일을 선택해 주세요.", true);
     return;
   }
-
   if (!coverPassword.value.trim()) {
     setUploadStatus("비밀번호를 입력해 주세요.", true);
     return;
@@ -232,7 +259,6 @@ async function saveFolderCover(event) {
 
   coverBtn.disabled = true;
   setUploadStatus("대표사진 저장 중...");
-
   try {
     ensureApiBase();
     const formData = new FormData();
@@ -244,7 +270,6 @@ async function saveFolderCover(event) {
       method: "POST",
       body: formData
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `대표사진 저장 실패: ${res.status}`);
 
@@ -270,7 +295,6 @@ async function loadPhotos() {
     ensureApiBase();
     const res = await fetch(`${CONFIG.apiBase}/items`, { cache: "no-store" });
     if (!res.ok) throw new Error(`목록 불러오기 실패: ${res.status}`);
-
     const data = await res.json();
     allItems = Array.isArray(data) ? data : data.items || [];
     folderCovers = Array.isArray(data) ? {} : data.covers || {};
@@ -300,15 +324,11 @@ function ensureApiBase() {
 
 function syncFolders() {
   const folderOptions = folders.length ? folders : ["기본"];
-  const optionsHtml = folderOptions.map(folder => {
-    return `<option value="${escapeHtml(folder)}">${escapeHtml(folder)}</option>`;
-  }).join("");
-
+  const optionsHtml = folderOptions.map(folder => `<option value="${escapeHtml(folder)}">${escapeHtml(folder)}</option>`).join("");
   folderSelect.innerHTML = `<option value="">전체</option>` + optionsHtml;
   uploadFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
   moveFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
   coverFolderSelect.innerHTML = optionsHtml + `<option value="${NEW_FOLDER_VALUE}">+ 새 폴더 추가</option>`;
-
   syncFolderInputs();
 }
 
@@ -335,16 +355,13 @@ function renderGallery() {
   const items = filteredItems();
   countText.textContent = `${items.length}개`;
   empty.classList.toggle("hidden", items.length !== 0);
-
   grid.innerHTML = items.map(item => cardHtml(item)).join("");
-
   grid.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => {
       if (manageMode) {
         toggleSelected(card.dataset.path);
         return;
       }
-
       const item = allItems.find(x => x.path === card.dataset.path);
       if (item) openViewer(item);
     });
@@ -353,7 +370,6 @@ function renderGallery() {
 
 function cardHtml(item) {
   let media = `<div class="file">파일</div>`;
-
   if (IMAGE_EXT.includes(item.ext)) {
     media = `<img src="${absoluteUrl(item.url)}" loading="lazy" alt="">`;
   } else if (VIDEO_EXT.includes(item.ext)) {
@@ -361,7 +377,6 @@ function cardHtml(item) {
   } else if (item.ext === ".pdf") {
     media = `<div class="file">PDF</div>`;
   }
-
   return `
     <article class="card ${selectedPaths.has(item.path) ? "selected" : ""}" data-path="${escapeHtml(item.path)}">
       <span class="select-mark"></span>
@@ -376,7 +391,6 @@ function cardHtml(item) {
 
 function renderFolders() {
   folderCount.textContent = `${folders.length}개`;
-
   folderGrid.innerHTML = folders.map(folder => {
     const count = allItems.filter(item => item.folder === folder).length;
     const cover = folderCovers[folder] ? absoluteUrl(folderCovers[folder]) : "";
@@ -390,7 +404,6 @@ function renderFolders() {
       </article>
     `;
   }).join("");
-
   folderGrid.querySelectorAll(".folder-card").forEach(card => {
     card.addEventListener("click", () => {
       currentFolder = card.dataset.folder;
@@ -411,12 +424,8 @@ function toggleManageMode() {
 }
 
 function toggleSelected(path) {
-  if (selectedPaths.has(path)) {
-    selectedPaths.delete(path);
-  } else {
-    selectedPaths.add(path);
-  }
-
+  if (selectedPaths.has(path)) selectedPaths.delete(path);
+  else selectedPaths.add(path);
   renderGallery();
   updateManagePanel();
 }
@@ -427,22 +436,22 @@ function updateManagePanel() {
 
 function openViewer(item) {
   let media = `<iframe src="${absoluteUrl(item.url)}"></iframe>`;
-
   if (IMAGE_EXT.includes(item.ext)) {
     media = `<img src="${absoluteUrl(item.url)}" alt="">`;
   } else if (VIDEO_EXT.includes(item.ext)) {
     media = `<video src="${absoluteUrl(item.url)}" controls autoplay></video>`;
   }
-
   viewerBody.innerHTML = `
-    <div class="viewer-media">${media}</div>
+    <div class="viewer-media">
+      ${media}
+      <div class="watermark">Photo by sj_yc12</div>
+    </div>
     <div class="viewer-info">
       <h2>${escapeHtml(cleanName(item.name))}</h2>
       <p>${escapeHtml(item.folder)}</p>
       <a href="${absoluteUrl(item.url)}" target="_blank" rel="noreferrer">원본 열기</a>
     </div>
   `;
-
   viewer.showModal();
 }
 

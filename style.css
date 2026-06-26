@@ -500,9 +500,26 @@ select {
 }
 
 .viewer-media {
+  position: relative;
   display: grid;
   place-items: center;
   background: #020611;
+}
+
+.watermark {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  z-index: 3;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  color: rgba(255,255,255,.88);
+  background: rgba(0,0,0,.42);
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,.65);
 }
 
 .viewer-media img,

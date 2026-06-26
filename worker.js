@@ -28,6 +28,7 @@ export default {
 
       if (request.method === "POST" && url.pathname === "/upload") return cors(await upload(request, env));
       if (request.method === "POST" && url.pathname === "/cover") return cors(await uploadCover(request, env));
+      if (request.method === "POST" && url.pathname === "/download") return cors(await downloadObjects(request, env));
       if (request.method === "POST" && url.pathname === "/move") return cors(await moveObjects(request, env));
       if (request.method === "POST" && url.pathname === "/delete") return cors(await deleteObjects(request, env));
 
@@ -109,6 +110,31 @@ async function moveObjects(request, env) {
   }
 
   return json({ changed });
+}
+
+async function downloadObjects(request, env) {
+  const body = await request.json();
+  const passwordError = await assertPassword(body.password);
+  if (passwordError) return passwordError;
+
+  const paths = Array.isArray(body.paths) ? body.paths : [];
+  const files = [];
+
+  for (const path of paths) {
+    const key = safePhotoKey(path);
+    if (!key) continue;
+
+    const object = await env.GALLERY_BUCKET.head(key);
+    if (!object) continue;
+
+    files.push({
+      name: key.split("/").pop(),
+      path: key,
+      url: fileUrl(key)
+    });
+  }
+
+  return json({ files });
 }
 
 async function deleteObjects(request, env) {
