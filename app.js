@@ -37,6 +37,8 @@ const selectedCount = $("selectedCount");
 const moveFolderSelect = $("moveFolderSelect");
 const moveFolderNew = $("moveFolderNew");
 const managePassword = $("managePassword");
+const selectAllBtn = $("selectAllBtn");
+const watermarkBtn = $("watermarkBtn");
 const downloadBtn = $("downloadBtn");
 const moveBtn = $("moveBtn");
 const deleteBtn = $("deleteBtn");
@@ -80,6 +82,8 @@ coverFolderSelect.addEventListener("change", syncFolderInputs);
 refreshBtn.addEventListener("click", loadPhotos);
 closeViewer.addEventListener("click", () => viewer.close());
 manageBtn.addEventListener("click", toggleManageMode);
+selectAllBtn.addEventListener("click", selectAllVisible);
+watermarkBtn.addEventListener("click", watermarkSelected);
 downloadBtn.addEventListener("click", downloadSelected);
 moveBtn.addEventListener("click", moveSelected);
 deleteBtn.addEventListener("click", deleteSelected);
@@ -205,6 +209,82 @@ async function downloadSelected() {
       await downloadFile(file.url, file.name);
     }
   });
+}
+
+function selectAllVisible() {
+  const items = filteredItems();
+  const allSelected = items.length > 0 && items.every(item => selectedPaths.has(item.path));
+
+  if (allSelected) {
+    items.forEach(item => selectedPaths.delete(item.path));
+  } else {
+    items.forEach(item => selectedPaths.add(item.path));
+  }
+
+  renderGallery();
+  updateManagePanel();
+}
+
+async function watermarkSelected() {
+  if (!selectedPaths.size) {
+    setUploadStatus("워터마크를 넣을 사진을 선택해 주세요.", true);
+    return;
+  }
+
+  if (!managePassword.value.trim()) {
+    setUploadStatus("관리 비밀번호를 입력해 주세요.", true);
+    return;
+  }
+
+  const items = [...selectedPaths]
+    .map(path => allItems.find(item => item.path === path))
+    .filter(item => item && IMAGE_EXT.includes(item.ext) && item.ext !== ".gif" && item.ext !== ".avif");
+
+  if (!items.length) {
+    setUploadStatus("워터마크를 넣을 수 있는 JPG/PNG/WebP 사진을 선택해 주세요.", true);
+    return;
+  }
+
+  watermarkBtn.disabled = true;
+  setUploadStatus(`워터마크 적용 중 0/${items.length}`);
+
+  try {
+    let changed = 0;
+
+    for (const item of items) {
+      const res = await fetch(absoluteUrl(item.url), { cache: "no-store" });
+      if (!res.ok) throw new Error(`${item.name} 불러오기 실패`);
+
+      const blob = await res.blob();
+      const sourceFile = new File([blob], item.name, { type: blob.type || contentTypeForExt(item.ext) });
+      const watermarked = await watermarkFile(sourceFile);
+
+      const formData = new FormData();
+      formData.append("path", item.path);
+      formData.append("password", managePassword.value.trim());
+      formData.append("file", watermarked);
+
+      const replaceRes = await fetch(`${CONFIG.apiBase}/replace`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await replaceRes.json().catch(() => ({}));
+      if (!replaceRes.ok) throw new Error(data.error || `${item.name} 저장 실패`);
+
+      changed += 1;
+      setUploadStatus(`워터마크 적용 중 ${changed}/${items.length}`);
+    }
+
+    setUploadStatus(`워터마크 적용 완료: ${changed}개`);
+    managePassword.value = "";
+    await loadPhotos();
+  } catch (err) {
+    console.error(err);
+    setUploadStatus(err.message || "워터마크 적용 실패", true);
+  } finally {
+    watermarkBtn.disabled = false;
+  }
 }
 
 async function downloadFile(url, name) {
@@ -524,6 +604,15 @@ function getExt(name) {
 function isSupported(name) {
   const ext = getExt(name);
   return IMAGE_EXT.includes(ext) || VIDEO_EXT.includes(ext) || FILE_EXT.includes(ext);
+}
+
+function contentTypeForExt(ext) {
+  return {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp"
+  }[ext] || "image/jpeg";
 }
 
 function cleanName(name) {

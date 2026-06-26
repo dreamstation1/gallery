@@ -26,8 +26,16 @@ export default {
         }));
       }
 
+      if (request.method === "GET" && url.pathname.startsWith("/view/")) {
+        const key = decodeURIComponent(url.pathname.slice("/view/".length));
+        const object = await env.GALLERY_BUCKET.head(key);
+        if (!object || !safePhotoKey(key)) return cors(html("Not found", 404));
+        return cors(html(viewPage(key)));
+      }
+
       if (request.method === "POST" && url.pathname === "/upload") return cors(await upload(request, env));
       if (request.method === "POST" && url.pathname === "/cover") return cors(await uploadCover(request, env));
+      if (request.method === "POST" && url.pathname === "/replace") return cors(await replaceObject(request, env));
       if (request.method === "POST" && url.pathname === "/download") return cors(await downloadObjects(request, env));
       if (request.method === "POST" && url.pathname === "/move") return cors(await moveObjects(request, env));
       if (request.method === "POST" && url.pathname === "/delete") return cors(await deleteObjects(request, env));
@@ -83,6 +91,29 @@ async function uploadCover(request, env) {
   });
 
   return json({ folder, cover: `/file/${encodeURIComponent(key).replaceAll("%2F", "/")}` });
+}
+
+async function replaceObject(request, env) {
+  const form = await request.formData();
+  const passwordError = await assertPassword(form.get("password"));
+  if (passwordError) return passwordError;
+
+  const key = safePhotoKey(form.get("path"));
+  if (!key) return json({ error: "잘못된 파일 경로입니다." }, 400);
+
+  const file = form.get("file");
+  if (!(file instanceof File)) return json({ error: "저장할 파일을 선택해 주세요." }, 400);
+
+  const ext = extension(key);
+  if (!IMAGE_EXT.has(ext) || ext === ".gif" || ext === ".avif") {
+    return json({ error: "JPG, PNG, WebP 사진만 워터마크를 적용할 수 있습니다." }, 400);
+  }
+
+  await env.GALLERY_BUCKET.put(key, file.stream(), {
+    httpMetadata: { contentType: file.type || contentType(ext) }
+  });
+
+  return json({ changed: 1 });
 }
 
 async function moveObjects(request, env) {
@@ -210,11 +241,91 @@ function fileUrl(key) {
   return `/file/${encodeURIComponent(key).replaceAll("%2F", "/")}`;
 }
 
+function viewPage(key) {
+  const file = fileUrl(key);
+  const ext = extension(key);
+  const title = escapeHtml(key.split("/").pop() || "photo");
+  const media = IMAGE_EXT.has(ext)
+    ? `<img src="${file}" alt="">`
+    : ext === ".mp4" || ext === ".webm" || ext === ".mov"
+      ? `<video src="${file}" controls autoplay></video>`
+      : `<iframe src="${file}"></iframe>`;
+
+  return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #05070c; color: white; font-family: system-ui, sans-serif; }
+    main { min-height: 100vh; display: grid; grid-template-rows: 1fr auto; }
+    .stage { position: relative; min-height: 0; display: grid; place-items: center; overflow: hidden; background: #02040a; }
+    img, video { max-width: 100vw; max-height: calc(100vh - 58px); display: block; }
+    iframe { width: 100vw; height: calc(100vh - 58px); border: 0; background: white; }
+    .watermark-pattern {
+      position: absolute;
+      inset: -18%;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 46px 34px;
+      align-content: center;
+      transform: rotate(-28deg);
+      opacity: .82;
+      pointer-events: none;
+    }
+    .watermark-pattern span {
+      color: rgba(245, 248, 255, .30);
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,.75), 0 0 1px rgba(0,0,0,.9);
+      white-space: nowrap;
+    }
+    footer { min-height: 58px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #080d17; border-top: 1px solid rgba(255,255,255,.12); }
+    a { color: #9ec1ff; }
+    p { margin: 0; color: rgba(255,255,255,.74); overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="stage">
+      ${media}
+      <div class="watermark-pattern" aria-hidden="true">
+        ${Array.from({ length: 32 }, () => "<span>Photo by sj_yc12</span>").join("")}
+      </div>
+    </div>
+    <footer>
+      <p>${title}</p>
+    </footer>
+  </main>
+</body>
+</html>`;
+}
+
+function html(value, status = 200) {
+  return new Response(value, {
+    status,
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
+}
+
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" }
   });
+}
+
+function escapeHtml(text = "") {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function cors(response) {
