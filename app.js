@@ -131,7 +131,8 @@ async function uploadToCloudflare(files, folder) {
   let fileCount = 0;
   for (const file of files) {
     if (!isSupported(file.name)) continue;
-    formData.append("files", file);
+    const uploadFile = await watermarkFile(file);
+    formData.append("files", uploadFile);
     fileCount += 1;
   }
 
@@ -144,6 +145,49 @@ async function uploadToCloudflare(files, folder) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `업로드 실패: ${res.status}`);
   return data.saved || fileCount;
+}
+
+async function watermarkFile(file) {
+  if (!file.type.startsWith("image/") || file.type === "image/gif" || file.type === "image/avif") {
+    return file;
+  }
+
+  const image = await loadImage(file);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const footerHeight = Math.max(58, Math.round(image.naturalHeight * 0.055));
+
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight + footerHeight;
+
+  ctx.drawImage(image, 0, 0);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+  ctx.fillRect(0, image.naturalHeight, canvas.width, footerHeight);
+
+  const fontSize = Math.max(24, Math.round(canvas.width * 0.025));
+  ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+  ctx.font = `700 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("Photo by sj_yc12", canvas.width / 2, image.naturalHeight + footerHeight / 2);
+
+  URL.revokeObjectURL(image.src);
+
+  const type = file.type === "image/png" || file.type === "image/webp" ? file.type : "image/jpeg";
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, type, 0.92));
+  if (!blob) return file;
+
+  const name = file.name.replace(/\.(jpe?g|png|webp)$/i, type === "image/png" ? ".png" : type === "image/webp" ? ".webp" : ".jpg");
+  return new File([blob], name, { type, lastModified: Date.now() });
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = URL.createObjectURL(file);
+  });
 }
 
 async function downloadSelected() {
