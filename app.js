@@ -451,10 +451,14 @@ function openViewer(item) {
     <div class="viewer-info">
       <h2>${escapeHtml(cleanName(item.name))}</h2>
       <p>${escapeHtml(item.folder)}</p>
-      <a href="${absoluteUrl(item.url)}" target="_blank" rel="noreferrer">원본 열기</a>
+      <a href="${viewUrl(item.path)}" target="_blank" rel="noreferrer">원본 열기</a>
     </div>
   `;
   viewer.showModal();
+}
+
+function viewUrl(path) {
+  return `${CONFIG.apiBase}/view/${encodeURIComponent(path).replaceAll("%2F", "/")}`;
 }
 
 function absoluteUrl(url) {

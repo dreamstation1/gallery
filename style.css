@@ -515,12 +515,12 @@ select {
   gap: 46px 34px;
   align-content: center;
   transform: rotate(-28deg);
-  opacity: .72;
+  opacity: .82;
   pointer-events: none;
 }
 
 .watermark-pattern span {
-  color: rgba(255,255,255,.34);
+  color: rgba(245,248,255,.30);
   font-size: 18px;
   font-weight: 900;
   text-align: center;
